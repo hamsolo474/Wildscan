@@ -12,6 +12,7 @@ except ModuleNotFoundError:
     import subprocess
     subprocess.check_call(sys.executable, '-m', 'pip', 'install', 'pillow')
     from PIL import Image, ImageTk
+
 class SimpleRunnerGUI(tk.Frame):
     """
     Arguments:
@@ -46,17 +47,17 @@ class SimpleRunnerGUI(tk.Frame):
         pad = {"padx": 8, "pady": 6}
 
         row = 0
-        #try:
-        img = Image.open('/home/ham/Documents/WildsideGdrive/logo.jpg').convert("RGBA")
-        img = img.resize((64,64), Image.LANCZOS)
-        self.tk_image = ImageTk.PhotoImage(img)
+        try:
+            img = Image.open('logo.jpg').convert("RGBA")
+            img = img.resize((64,64), Image.LANCZOS)
+            self.tk_image = ImageTk.PhotoImage(img)
 
-        # Image label
-        lbl_img = ttk.Label(self, image=self.tk_image)
-        lbl_img.grid(row=row, column=0, sticky="w", **pad)
+            # Image label
+            lbl_img = ttk.Label(self, image=self.tk_image)
+            lbl_img.grid(row=row, column=0, sticky="w", **pad)
 
-        #except FileNotFoundError as e:
-        #    print(f'ERROR: {e}')
+        except FileNotFoundError as e:
+            print(f'ERROR: {e}')
 
         font = tkfont.Font(size=25)
         lbl_model = ttk.Label(self, text="Wildscan", font=font)
