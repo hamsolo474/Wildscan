@@ -2,16 +2,16 @@ import os
 import threading
 import webbrowser
 import tkinter as tk
+import tkinter.font as tkfont
 from tkinter import ttk, filedialog, messagebox
 from typing import Callable, Iterable, Optional
 
 try:
-    from PIL import Image
+    from PIL import Image, ImageTk
 except ModuleNotFoundError:
     import subprocess
     subprocess.check_call(sys.executable, '-m', 'pip', 'install', 'pillow')
-    from PIL import Image
-
+    from PIL import Image, ImageTk
 class SimpleRunnerGUI(tk.Frame):
     """
     Arguments:
@@ -46,17 +46,20 @@ class SimpleRunnerGUI(tk.Frame):
         pad = {"padx": 8, "pady": 6}
 
         row = 0
-        image_label = ttk.Label(self)
-        image_label.grid(row=row, column=0, sticky="w", **pad)
-        try:
-            #image = Image.open('logo.jpg')
-            #image.thumbnail([128,128], Image.Resampling.LANCZOS)
-            photo = tk.PhotoImage('logo.jpg')
-            image_label.config(image=photo)
-            image_label.image = photo
-        except FileNotFoundError:
-            pass
-        lbl_model = ttk.Label(self, text="Wildscan")
+        #try:
+        img = Image.open('/home/ham/Documents/WildsideGdrive/logo.jpg').convert("RGBA")
+        img = img.resize((64,64), Image.LANCZOS)
+        self.tk_image = ImageTk.PhotoImage(img)
+
+        # Image label
+        lbl_img = ttk.Label(self, image=self.tk_image)
+        lbl_img.grid(row=row, column=0, sticky="w", **pad)
+
+        #except FileNotFoundError as e:
+        #    print(f'ERROR: {e}')
+
+        font = tkfont.Font(size=25)
+        lbl_model = ttk.Label(self, text="Wildscan", font=font)
         lbl_model.grid(row=row, column=1, sticky="w", **pad)
 
         row += 1
@@ -273,6 +276,7 @@ if __name__ == "__main__":
     gui = SimpleRunnerGUI(root,
                           models=["Best", "Last"],
                           run_callback=real_run)
-    gui.pack(fill="both", expand=True, padx=12, pady=12)
+    gui.grid(padx=8, pady=6)
+    #gui.pack(fill="both", expand=True, padx=12, pady=12)
 
     root.mainloop()
