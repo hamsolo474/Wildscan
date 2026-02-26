@@ -11,7 +11,7 @@ try:
     from ultralytics import YOLO
     import cv2
 except ModuleNotFoundError:
-    import subprocess
+    import subprocess, sys
     subprocess.check_call(sys.executable, '-m', 'pip', 'install', 'opencv-python', 'pandas', 'numpy', 'ultralytics')
     import cv2
     import numpy as np
@@ -53,33 +53,45 @@ colour = (
 )
 
 class app():
-    def __init__(self, model, input_path, output_path, output_mode, progress_callback=None, verbose: bool = False):
+    def __init__(self,
+                 model: str,
+                 input_path: str,
+                 output_path: str,
+                 output_mode: str,
+                 day_conf: float,
+                 night_conf: float,
+                 progress_callback=None,
+                 verbose: bool = False):
         self.start_time = time.perf_counter()
         self.timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         self.verbose = verbose
         self.model = models_bl_dict[model]
         self.day_model = YOLO(self.model['day'])
         self.day_model.to("cuda")
+        self.day_conf = day_conf/100
         self.night_model = YOLO(self.model['night'])
         self.night_model.to("cuda")
+        self.night_conf = night_conf/100
         self.IMAGE_DIR = input_path
         self.output_dir = output_path
         self.output_mode = output_mode
         self.progress_callback = progress_callback
         self.OUTPUT_JSON = os.sep.join([self.output_dir,
-                                        f"results_{self.timestamp}.json"])
+                                        f"results_{self.timestamp} CONF {int(self.day_conf*100)}-{int(self.night_conf*100)} MODEL {model} MODE {self.output_mode}.json"])
         self.OUTPUT_XLSX = os.sep.join([self.output_dir,
-                                        f"results_{self.timestamp}.xlsx"])
+                                        f"results_{self.timestamp} CONF {int(self.day_conf*100)}-{int(self.night_conf*100)} MODEL {model} MODE {self.output_mode}.xlsx"])
         self.DETECTED_DIR = os.sep.join([self.output_dir,
-                                         f"has_animal_{self.timestamp}"])
+                                         f"has_animal_{self.timestamp} CONF {int(self.day_conf*100)}-{int(self.night_conf*100)} MODEL {model} MODE {self.output_mode}"])
         self.UNDETECTED_DIR = os.sep.join([self.output_dir,
-                                           f"no_animal_{self.timestamp}"])
+                                           f"no_animal_{self.timestamp} CONF {int(self.day_conf*100)}-{int(self.night_conf*100)} MODEL {model}"])
         for path in [self.output_dir, self.DETECTED_DIR, self.UNDETECTED_DIR]:
             p = pathlib.Path(path)
             assert p.is_file() == False
             if p.is_dir():
+                print(p,'is dir, skipping')
                 pass
             else:
+                print(f'creating DIR {p}')
                 os.mkdir(path)
 
     def is_night_by_color(self, img, color_thresh=10):
@@ -104,7 +116,7 @@ class app():
             model = night_model
             infer_iou = 0.85
             scene = "night"
-            CONF_THRESHOLD = 0.3
+            CONF_THRESHOLD = self.night_conf
         else:
             img_for_infer = img
             model = day_model
