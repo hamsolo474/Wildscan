@@ -40,6 +40,8 @@ class SimpleRunnerGUI(tk.Frame):
         self.output_mode = "Original images"
         self.output_modes = ["Original images", "Annotated images"]
         self.run_callback = run_callback or self._default_run_callback
+        self.day_conf_default = 15
+        self.night_conf_default = 30
 
         self._build_ui(default_input, default_output)
 
@@ -73,6 +75,27 @@ class SimpleRunnerGUI(tk.Frame):
         cmb.grid(row=row, column=1, columnspan=2, sticky="ew", **pad)
 
         row += 1
+        # Threshold Sliders
+        lbl_day_conf_scale = ttk.Label(self, text=f'Day Conf: (Default {self.day_conf_default}%)')
+        lbl_day_conf_scale.grid(row=row, column=0, sticky="w", **pad)
+        self.day_conf_scale_var = tk.IntVar(value=self.day_conf_default)
+        day_conf_scale = ttk.Scale(self, from_=1, to=100, orient="horizontal", command=self.day_conf_scale_move)
+        day_conf_scale.set(self.day_conf_default)
+        day_conf_scale.grid(row=row, column=1, columnspan=1, sticky="ew", **pad)
+        self.day_conf_scale_val_label = ttk.Label(self, text=str(self.day_conf_default), width=4)
+        self.day_conf_scale_val_label.grid(row=row, column=2, sticky="w", **pad)
+
+        row += 1
+        lbl_night_conf_scale = ttk.Label(self, text=f'Night Conf: (Default {self.night_conf_default}%)')
+        lbl_night_conf_scale.grid(row=row, column=0, sticky="w", **pad)
+        self.night_conf_scale_var = tk.IntVar(value=self.night_conf_default)
+        night_conf_scale = ttk.Scale(self, from_=1, to=100, orient="horizontal", command=self.night_conf_scale_move)
+        night_conf_scale.set(self.night_conf_default)
+        night_conf_scale.grid(row=row, column=1, columnspan=1, sticky="ew", **pad)
+        self.night_conf_scale_val_label = ttk.Label(self, text=str(self.night_conf_default), width=4)
+        self.night_conf_scale_val_label.grid(row=row, column=2, sticky="w", **pad)
+
+        row += 1
         #Output mode selector
         lbl_output_mode = ttk.Label(self, text="Output mode:")
         lbl_output_mode.grid(row=row, column=0, sticky="w", **pad)
@@ -88,7 +111,7 @@ class SimpleRunnerGUI(tk.Frame):
 
         self.input_var = tk.StringVar(value=default_input)
         ent_in = ttk.Entry(self, textvariable=self.input_var)
-        ent_in.grid(row=row, column=1, sticky="ew", **pad)
+        ent_in.grid(row=row, column=1, columnspan=2, sticky="ew", **pad)
 
         btn_in = ttk.Button(self, text="Browse...", command=self._choose_input_folder)
         btn_in.grid(row=row, column=2, sticky="e", **pad)
@@ -100,7 +123,7 @@ class SimpleRunnerGUI(tk.Frame):
 
         self.output_var = tk.StringVar(value=default_output)
         ent_out = ttk.Entry(self, textvariable=self.output_var)
-        ent_out.grid(row=row, column=1, sticky="ew", **pad)
+        ent_out.grid(row=row, column=1, columnspan=2, sticky="ew", **pad)
 
         btn_out = ttk.Button(self, text="Browse...", command=self._choose_output_folder)
         btn_out.grid(row=row, column=2, sticky="e", **pad)
@@ -110,8 +133,18 @@ class SimpleRunnerGUI(tk.Frame):
         self.run_btn = ttk.Button(self, text="Run", command=self._on_run)
         self.run_btn.grid(row=row, column=0, columnspan=3, sticky="ew", **pad)
 
-              # Grid weight
+        # Grid weight
         self.columnconfigure(1, weight=1)
+
+    def day_conf_scale_move(self, raw_value):
+        val = int(float(raw_value))
+        self.day_conf_scale_var.set(val)
+        self.day_conf_scale_val_label.config(text=str(val))
+
+    def night_conf_scale_move(self, raw_value):
+        val = int(float(raw_value))
+        self.night_conf_scale_var.set(val)
+        self.night_conf_scale_val_label.config(text=str(val))
 
     def _choose_input_folder(self):
         path = filedialog.askdirectory(title="Select input folder", initialdir=self.input_var.get())
@@ -125,11 +158,11 @@ class SimpleRunnerGUI(tk.Frame):
 
     def _on_run(self):
         pad = {"padx": 8, "pady": 6}
-        row = 6
+        row = 8
         # Status label (small)
         self.status_var = tk.StringVar(value="")
         lbl_status = ttk.Label(self, textvariable=self.status_var, foreground="gray")
-        lbl_status.grid(row=row, column=0, columnspan=3, sticky="w", padx=8, pady=(0,8))
+        lbl_status.grid(row=row, column=0, columnspan=1, sticky="w", padx=8, pady=(0,8))
 
         row += 1
         # Progress bar
@@ -141,10 +174,12 @@ class SimpleRunnerGUI(tk.Frame):
         lbl_progress = ttk.Label(self, textvariable=self.progress_label_var)
         lbl_progress.grid(row=row, column=2, sticky="e", **pad)
 
-        model = self.model_var.get()
+        #model = self.model_var.get()
         input_path = self.input_var.get().strip()
+        #day_conf=self.day_conf_scale_var.get()
+        #night_conf=self.night_conf_scale_var.get()
         output_path = self.output_var.get().strip()
-        output_mode = self.output_mode_var.get().strip()
+        #output_mode = self.output_mode_var.get().strip()
 
         if not input_path or not os.path.isdir(input_path):
             messagebox.showerror("Input folder required", "Please select a valid input folder.")
@@ -173,10 +208,12 @@ class SimpleRunnerGUI(tk.Frame):
                     self.master.after(0, lambda: self._run_finished(success, message, output_path))
 
                 # If run_callback is synchronous and long, run it in this worker thread.
-                self.run_callback(model=model,
-                                  input_path=input_path,
-                                  output_path=output_path,
-                                  output_mode=output_mode,
+                self.run_callback(model       = self.model_var.get(),
+                                  input_path  = self.input_var.get().strip(),
+                                  output_path = self.output_var.get().strip(),
+                                  output_mode = self.output_mode_var.get().strip(),
+                                  day_conf    = self.day_conf_scale_var.get(),
+                                  night_conf  = self.night_conf_scale_var.get(),
                                   on_done=on_done,
                                   progress_callback=progress_callback,
                                   verbose=True)
@@ -257,7 +294,7 @@ if __name__ == "__main__":
     root = tk.Tk()
     root.title("Wildscan")
 
-    def real_run(model, input_path, output_path, output_mode, on_done, progress_callback, verbose=False):
+    def real_run(model, input_path, output_path, output_mode, day_conf, night_conf, on_done, progress_callback, verbose=False):
         def worker():
             import detection_code as dc
             try:
@@ -265,6 +302,8 @@ if __name__ == "__main__":
                              input_path=input_path,
                              output_path=output_path,
                              output_mode=output_mode,
+                             day_conf=day_conf,
+                             night_conf=night_conf,
                              progress_callback=progress_callback,
                              verbose=verbose)
                 message = app.main()
